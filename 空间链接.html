@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>粒子空间运动</title>
+<style type="text/css">
+	*{
+		padding: 0 ;
+		margin: 0 auto;
+	}
+body{
+	height: 100%;
+	width: 100%;
+	overflow: hidden;
+}	
+</style>
+	</head>
+	<body>
+		
+		<canvas id="Canvas" ></canvas>
+		
+		<script type="text/javascript">
+			//处理兼容问题
+			window.requestAnimationFrame = (function (){
+				
+				return window.requestAnimationFrame ||
+				        window.webkitRequestAnimationFrame ||
+				        window.mozRequestAnimationFrame ||
+				        function(callback){
+				        	window.setTimeout(callback,1000/60);
+				        };
+				
+				
+			})();
+			
+			//绘制背景函数
+			
+			function drawBg(ctxt){
+			
+			ctxt.beginPath();
+			ctxt.fillStyle ="#020215";
+			ctxt.fillRect(0,0,cW,cH);
+			ctxt.save();
+				
+			
+			}
+			
+			//随机数颜色0-255
+			function  randColor(){
+				
+				return  Math.round(Math.random()*255);
+				
+			}
+			
+			//随机构造颜色
+			function Color(){
+				
+				this.r =  randColor();
+				this.g =  randColor();
+				this.b =  randColor();
+				this.rgb="rgba("+this.r+","+this.g+","+this.b+",1)";
+				
+				
+			}
+			
+			window.onload =function (){
+				
+				var c = document.getElementById("Canvas");
+				
+				c.width = cW = window.innerWidth;
+				c.height =cH = window.innerHeight;
+				
+				var ctxt = c.getContext("2d");
+				
+				//绘制背景
+				drawBg(ctxt);
+				
+				//创建粒子配置
+				var Dots = {
+					
+					n: 290,
+					minDis:40,
+					d_mouse:80,
+					array:[],
+					radiusArr:[]
+					
+				}
+				
+				
+				//每个粒子配置
+				
+				function Dot(){
+					
+					//创建随机颜色
+					this.color = new Color();
+					
+					//设置随机圆心坐标
+					this.x = Math.round(Math.random()*cW);
+					this.y = Math.round(Math.random()*cH);
+					
+					//设置随机半径
+					this.radius = Math.round(Math.random()*5);
+					
+					
+					//设置随机速度
+					
+					this.vx = (Math.random()-0.6)*3;
+					this.vy =(Math.random()-0.6)*3;
+				}
+					//初始化
+					Dot.prototype.draw = function(){
+						
+						ctxt.beginPath();
+						ctxt.fillStyle = this.color.rgb;
+						ctxt.arc(this.x,this.y,this.radius,0,360,false);
+						ctxt.fill();
+						
+						
+					};
+					
+					//创建粒子并放入数组
+					
+					for(var i=0; i<Dots.n; i++){
+						
+						var dotObj = new Dot();
+						
+						Dots.array.push(dotObj);
+						
+						Dots.radiusArr.push(dotObj.radius);
+						
+					}
+					
+					//画出粒子
+					function drawDots(){
+						
+						drawBg(ctxt);
+						
+						for (var i=0;i<Dots.n;i++) {
+							
+							Dots.array[i].draw();
+						}
+					}
+					
+					drawDots();
+					
+					//移动粒子
+					function moveDots(){
+						
+						for (var i = 0; i<Dots.n ; i++) {
+							
+							var dot = Dots.array[i];
+							
+							//反弹判断
+								
+							if (dot.x < 0 || dot.x > cW) {
+									
+									dot.vx = -dot.vx;
+								} 
+								
+							if(dot.y<0 || dot.y>cH){
+									
+									dot.vy = -dot.vy;
+								
+							    }
+							dot.x +=dot.vx;
+							dot.y +=dot.vy;
+							
+							
+						}
+					}
+					
+					
+					//连线
+					function connection(){
+						
+						
+						//颜色随机搭配
+						function mixColor(dot1,dot2 ){
+							//颜色
+							var color1 = dot1.color;
+							var color2 = dot2.color;
+							
+							//半径r1 r2
+							var r1 = dot1.radius;						
+							var r2 = dot2.radius;
+							
+							//rgb
+							
+							var r = Math.floor((color1.r*r1+color2.r*r2)/(r1+r2));
+							var g = Math.floor((color1.g*r1+color2.g*r2)/(r1+r2));
+							var b = Math.floor((color1.b*r1+color2.b*r2)/(r1+r2));
+						    
+						    return "rgba("+r+","+g+","+b+",1)"
+						   
+						
+						}
+						
+						
+						for (var i=0; i < Dots.n; i++) 
+						{
+						   for (var j=0 ;j<Dots.n;j++) 
+						   {
+						   	
+						   	var dot1 = Dots.array[i];
+						   	var dot2 = Dots.array[j];
+						   	var color = mixColor(dot1,dot2);
+						   	
+						   	if((Math.abs(dot1.x-dot2.x)<Dots.minDis )&& 
+						   	(Math.abs(dot1.y - dot2.y)<Dots.minDis ))
+						   	{
+						   		
+						   		ctxt.lineWidth = 0.2;
+						   		ctxt.beginPath();
+						   		ctxt.strokeStyle = color;
+						   		ctxt.moveTo(dot1.x,dot1.y);
+						   		ctxt.lineTo(dot2.x,dot2.y);
+						   		ctxt.stroke();
+						   	}
+						   }
+						}
+					}
+				
+				c.onmousemove=function(e){
+					
+					
+					var e = window.event || e;
+					
+					var pX =e.pageX;
+					var pY = e.pageY;
+					
+					for(var i =0;i<Dots.n;i++)
+					{
+					
+					  if(Math.abs(Dots.array[i].x-pX)<Dots.d_mouse && Math.abs(Dots.array[i].y-pY)<Dots.d_mouse )
+					  {
+				
+					var r = Dots.radiusArr[i]*3;
+					Dots.array[i].radius = r;
+					
+					}
+					else{
+												
+						Dots.array[i].radius=Dots.radiusArr[i];
+				  
+					   }
+			     	}
+		
+			
+				}
+				
+				//运动
+				function infinateMove(){
+					
+					ctxt.clearRect(0,0,cW,cH);
+					moveDots();
+					drawDots();
+					connection();
+					requestAnimationFrame(infinateMove);
+					
+				}
+					infinateMove();
+				
+			}
+	
+		</script>
+	</body>
+</html>
